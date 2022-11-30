@@ -12,9 +12,9 @@ from discord import utils, Interaction
 from discord.ui import Select, View
 import asyncio
 
-TOKEN = 'E'
+TOKEN = 'EXPUNGED'
 
-INVITE = 'https://discord.com/api/oauth2/authorize?client_id=1046073478765367306&permissions=4398046511095&scope=bot'
+INVITE = 'REDACTED'
 
 bot = commands.Bot(command_prefix='?', intents=discord.Intents.default().all())
 
@@ -210,6 +210,8 @@ async def verify5e65T(ctx):
 async def on_member_join(member):
     role = discord.utils.get(member.guild.roles, name='Unverified')
     await member.add_roles(role)
+    if role==None:
+        print('Ignoring...')
 
 @bot.tree.command(name='launchmenus', description='Launch the menu system')
 async def _launchmenus(interaction: discord.Interaction):
@@ -356,5 +358,55 @@ async def _setup(interaction: discord.Interaction):
         await announcementschannel.send('Post any announcement here using /announce.')
         await interaction.response.send_message('Delete the standard categories that are created when creating a server now.')
 
+@bot.tree.command(name='slowmode', description='Set the slowmode of a channel.')
+@app_commands.describe(time='Select how much the slowmode should be.')
+async def _slowmode(interaction: discord.Interaction, time: int):
+    if interaction.user.guild_permissions.manage_channels==False:
+        await interaction.response.send_message('You do not have the required permissions to use this command.', ephemeral=True)
+    else:
+        if time==0:
+            await interaction.response.send_message('Reset the slowmode time back to 0 automatically.', ephemeral=True)
+            await interaction.channel.edit(slowmode_delay=0)
+            loggingchannel = utils.get(interaction.guild.channels, name='logs')
+            await loggingchannel.send('User {} set the slowmode time to {} in {}'.format(interaction.user, time, interaction.channel))
+        else:
+            await interaction.channel.edit(slowmode_delay=time)
+            await interaction.response.send_message('Set the slowmode to {} in {}.'.format(time, interaction.channel), ephemeral=True)
+            loggingchannel = utils.get(interaction.guild.channels, name='logs')
+            await loggingchannel.send('User {} set the slowmode time to {} in {}'.format(interaction.user, time, interaction.channel))
+
+@bot.tree.command(name='reminder', description='Sets a reminder for you.')
+@app_commands.describe(reminder='What do you wanna be reminded off?', time='When should you be reminded?')
+async def _reminder(interaction: discord.Interaction, reminder: str, time: str):
+    def convert(time):
+        pos = ['s', 'm', 'h', 'd']
+
+        time_dict = {'s': 1, 'm': 60, 'h': 3600, 'd': 3600*24}
+
+        unit = time[-1]
+
+        if unit not in pos:
+            return -1
+        try:
+            val = int(time[:-1])
+        except:
+            return -2
+        
+        return val * time_dict[unit]
+    
+    converted_time = convert(time)
+
+    if converted_time == -1:
+        await interaction.response.send_message('You did not answer the time.', ephemeral=True)
+        return
+    
+    if converted_time == -2:
+        await interaction.response.send_message('The time must be a number!', ephemeral=True)
+        return
+    
+    await interaction.response.send_message('Started reminder for **{}** and I will remind you in **{}**.'.format(reminder, time))
+
+    await asyncio.sleep(converted_time)
+    await interaction.followup.send('{} reminded you for **{}**.'.format(interaction.user.mention, reminder))
 
 bot.run(TOKEN)

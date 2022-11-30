@@ -216,15 +216,12 @@ async def on_member_join(member):
 @bot.tree.command(name='launchmenus', description='Launch the menu system')
 async def _launchmenus(interaction: discord.Interaction):
     select = Select(options=[
-        discord.SelectOption(label='Python', emoji='<:python:1046813438145466378>', value='0'),
-        discord.SelectOption(label='C++', emoji='<:csharp:1046813393497100431>', value='1'),
-        discord.SelectOption(label='C#', emoji='<:cplusplus:1046813421124984973>', value='2')
+        discord.SelectOption(label='Python', emoji='<:python:10468134381484973>', value='2')
     ])
     view = View()
     view.add_item(select)
     
-    async def callback(interaction: discord.Interaction):
-        pythonrole = utils.get(interaction.guild.roles, name='Python')
+    async def callback(interaction: discord.Interactio
         cplusplus = utils.get(interaction.guild.roles, name='C++')
         csharp = utils.get(interaction.guild.roles, name='C#')
         if select.values[0] == '0':
@@ -261,11 +258,7 @@ async def _clearlogs(interaction: discord.Interaction):
         await channel.purge(limit=999)
         await interaction.response.send_message('Cleared the logs.', ephemeral=True)
 
-@bot.tree.command(name='announce', description='Announce something.')
-@app_commands.describe(announcement='Announce something here.')
-async def _announce(interaction: discord.Interaction, announcement: str):
-    if interaction.user.guild_permissions.administrator==False:
-        await interaction.response.send_message('You cannot use this bla bla bla...', ephemeral=True)
+@bot.tree.command(name='announce', de('You cannot use this bla bla bla...', ephemeral=True)
     else:
         channel = utils.get(interaction.guild.channels, name='announcements')
         await channel.send(announcement)
@@ -306,10 +299,7 @@ async def _setup(interaction: discord.Interaction):
             verifiedRole: discord.PermissionOverwrite(read_messages=True, send_messages=False),
             unverifiedRole: discord.PermissionOverwrite(read_messages=True, send_messages=False)
         }
-        specialchannel = {
-            staffrole: discord.PermissionOverwrite(read_messages=True, send_messages=True),
-            verifiedRole: discord.PermissionOverwrite(read_messages=True, send_messages=False),
-            unverifiedRole: discord.PermissionOverwrite(read_messages=True, send_messages=False)
+        specialchannel = {e(read_messages=True, send_messages=False)
         }
         memes = {
             verifiedRole: discord.PermissionOverwrite(read_messages=True, send_messages=True, attach_files=True, embed_links=True),
@@ -326,8 +316,7 @@ async def _setup(interaction: discord.Interaction):
         await interaction.guild.create_category(name='Support')
         await interaction.guild.create_category(name='Staff')
         importantcategory = utils.get(interaction.guild.categories, name='Important')
-        generalcategory = utils.get(interaction.guild.categories, name='General')
-        verificationprocess = utils.get(interaction.guild.categories, name='Verification Process')
+        genprocess = utils.get(interaction.guild.categories, name='Verification Process')
         supportcategory = utils.get(interaction.guild.categories, name='Support')
         staffcategorys = utils.get(interaction.guild.categories, name='Staff')
         await interaction.guild.create_text_channel(name='announcements', overwrites=important, category=importantcategory)
@@ -376,7 +365,7 @@ async def _slowmode(interaction: discord.Interaction, time: int):
             await loggingchannel.send('User {} set the slowmode time to {} in {}'.format(interaction.user, time, interaction.channel))
 
 @bot.tree.command(name='reminder', description='Sets a reminder for you.')
-@app_commands.describe(reminder='What do you wanna be reminded off?', time='When should you be reminded?')
+@app_commands.desribe(reminder='What do you wanna be reminded off?', time='When should you be reminded?')
 async def _reminder(interaction: discord.Interaction, reminder: str, time: str):
     def convert(time):
         pos = ['s', 'm', 'h', 'd']
@@ -404,9 +393,6 @@ async def _reminder(interaction: discord.Interaction, reminder: str, time: str):
         await interaction.response.send_message('The time must be a number!', ephemeral=True)
         return
     
-    await interaction.response.send_message('Started reminder for **{}** and I will remind you in **{}**.'.format(reminder, time))
-
-    await asyncio.sleep(converted_time)
-    await interaction.followup.send('{} reminded you for **{}**.'.format(interaction.user.mention, reminder))
+    await interaction.response.send_messad('{} reminded you for **{}**.'.format(interaction.user.mention, reminder))
 
 bot.run(TOKEN)

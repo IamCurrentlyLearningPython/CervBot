@@ -12,7 +12,7 @@ from discord import utils, Interaction
 from discord.ui import Select, View
 import asyncio
 
-TOKEN = 'Token not here;)'
+TOKEN = 'E'
 
 INVITE = 'https://discord.com/api/oauth2/authorize?client_id=1046073478765367306&permissions=4398046511095&scope=bot'
 
@@ -81,11 +81,6 @@ async def test(interaction: discord.Interaction):
 async def say(interaction: discord.Interaction, arg: str):
     await interaction.response.send_message(f'{arg}', ephemeral=True)
 
-@bot.tree.command(name='invite')
-async def invite(interaction: discord.Interaction):
-    await interaction.response.send_message("""You can invite the bot by clicking on the blue-highlighted text!
-[Click me!](https://discord.com/oauth2/authorize?client_id=1046073478765367306&scope=bot+applications.commands&permissions=8)""")
-
 @bot.tree.command(name="guessthenumber", description="Guess the number",)
 async def guessthenumber(interaction: discord.Interaction,):
     await interaction.response.send_message("Please guess a number from **1-100**, you have **5** guesses.")
@@ -129,6 +124,8 @@ async def _mute(interaction: discord.Interaction, member: discord.Member, durati
             color=discord.Color.red()
         )
         await interaction.response.send_message(embed=embed1, ephemeral=True)
+        channel = utils.get(interaction.guild.channels, name='logs')
+        await channel.send(f'User `{interaction.user}` warned `{member}` for `{reason}`.')
 
 @bot.event
 async def on_application_command_error(interaction: discord.Interaction, error):
@@ -157,6 +154,8 @@ async def _ban(interaction: discord.Interaction, member: discord.Member, reason:
                 color=discord.Color.red()
             )
             await interaction.response.send_message(embed=embed)
+            channel = utils.get(interaction.guild.channels, name='logs')
+            await channel.send(f'User `{interaction.user}` warned `{member}` for `{reason}`.')
 
 @bot.tree.command(name='kick', description='Kick a user from the guild.')
 @app_commands.describe(member='Select a member to kick from the guild.', reason='Select a reason to why you kicked the member.')
@@ -171,6 +170,8 @@ async def _kick(interaction: discord.Interaction, member: discord.Member, reason
     else:
         await member.kick()
         await interaction.response.send_message('Kicked {} for {} successfully.'.format(member, reason))
+        channel = utils.get(interaction.guild.channels, name='logs')
+        await channel.send(f'User `{interaction.user}` warned `{member}` for `{reason}`.')
 
 @bot.tree.command(name='clear', description='Purges the selected amount.')
 async def _clear(interaction: discord.Interaction, amount: int):
@@ -238,6 +239,122 @@ async def _launchmenus(interaction: discord.Interaction):
 
     embed = discord.Embed(description='What is **YOUR** coding language?', color=discord.Color.dark_magenta())
     await interaction.response.send_message(embed=embed, view=view)
+
+@bot.tree.command(name='warn',description='Warn a user')
+@app_commands.describe(member='Select a member you want to warn.', reason='Why do you want to warn the member?')
+async def _warn(interaction: discord.Interaction, member: discord.Member, reason: str):
+    if interaction.user.guild_permissions.kick_members==False:
+        await interaction.response.send_message('You do not have any permissions so just STOP!', ephemeral=True)
+    embed = discord.Embed(title='Warned {} for {}'.format(member, reason), color=discord.Color.random())
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+    channel = utils.get(interaction.guild.channels, name='logs')
+    await channel.send(f'User `{interaction.user}` warned `{member}` for `{reason}`.')
+
+@bot.tree.command(name='clearlogs', description='Clear the mod logs.')
+async def _clearlogs(interaction: discord.Interaction):
+    if interaction.user.guild_permissions.administrator==False:
+        await interaction.response.send_message('You require {} permissions to execute this command.'.format(interaction.user.guild_permissions.administrator), ephemeral=True)
+    else:
+        channel = utils.get(interaction.guild.channels, name='logs')
+        await channel.purge(limit=999)
+        await interaction.response.send_message('Cleared the logs.', ephemeral=True)
+
+@bot.tree.command(name='announce', description='Announce something.')
+@app_commands.describe(announcement='Announce something here.')
+async def _announce(interaction: discord.Interaction, announcement: str):
+    if interaction.user.guild_permissions.administrator==False:
+        await interaction.response.send_message('You cannot use this bla bla bla...', ephemeral=True)
+    else:
+        channel = utils.get(interaction.guild.channels, name='announcements')
+        await channel.send(announcement)
+        await interaction.response.send_message('Sent the announcement.', ephemeral=True)
+
+@bot.tree.command(name='setup', description='If you are too lazy, use this command. This will set up an server automatically.')
+async def _setup(interaction: discord.Interaction):
+    if interaction.user.guild_permissions.administrator==False:
+        await interaction.response.send_message('You cannot use this command as you are missing the admin permissions so yeaa.', ephemeral=True)
+    else:
+        await interaction.response.send_message('Setting up...')
+        await interaction.guild.create_role(name='Staff Team', color=discord.Color.random())
+        await interaction.guild.create_role(name='Verified', color=discord.Color.blue())
+        await interaction.guild.create_role(name='Unverified', color=discord.Color.dark_blue())
+        await interaction.guild.create_role(name='Poll Permissions', color=discord.Color.red())
+        staffrole = utils.get(interaction.guild.roles, name='Staff Team')
+        verifiedRole = utils.get(interaction.guild.roles, name='Verified')
+        unverifiedRole = utils.get(interaction.guild.roles, name='Unverified')
+        pollperms = utils.get(interaction.guild.roles, name='Poll Permissions')
+        staffoverwrites = {
+            staffrole: discord.PermissionOverwrite(read_messages=True, send_messages=True, embed_links=True, attach_files=True),
+            unverifiedRole: discord.PermissionOverwrite(read_messages=False),
+            verifiedRole: discord.PermissionOverwrite(read_messages=False),
+            pollperms: discord.PermissionOverwrite(read_messages=False)
+        }
+        verifyChannel = {
+            staffrole: discord.PermissionOverwrite(read_messages=True, send_messages=True),
+            unverifiedRole: discord.PermissionOverwrite(read_messages=True, send_messages=True),
+            verifiedRole: discord.PermissionOverwrite(read_messages=False),
+            pollperms: discord.PermissionOverwrite(read_messages=True)
+        }
+        general = {
+            unverifiedRole: discord.PermissionOverwrite(read_messages=False),
+            verifiedRole: discord.PermissionOverwrite(read_messages=True, send_messages=True)
+        }
+        important = {
+            staffrole: discord.PermissionOverwrite(read_messages=True, send_messages=True),
+            verifiedRole: discord.PermissionOverwrite(read_messages=True, send_messages=False),
+            unverifiedRole: discord.PermissionOverwrite(read_messages=True, send_messages=False)
+        }
+        specialchannel = {
+            staffrole: discord.PermissionOverwrite(read_messages=True, send_messages=True),
+            verifiedRole: discord.PermissionOverwrite(read_messages=True, send_messages=False),
+            unverifiedRole: discord.PermissionOverwrite(read_messages=True, send_messages=False)
+        }
+        memes = {
+            verifiedRole: discord.PermissionOverwrite(read_messages=True, send_messages=True, attach_files=True, embed_links=True),
+            unverifiedRole: discord.PermissionOverwrite(read_messages=False)
+        }
+        owner = {
+            verifiedRole: discord.PermissionOverwrite(read_messages=False),
+            unverifiedRole: discord.PermissionOverwrite(read_messages=False),
+            staffrole: discord.PermissionOverwrite(read_messages=False)
+        }
+        await interaction.guild.create_category(name='Important')
+        await interaction.guild.create_category(name='General')
+        await interaction.guild.create_category(name='Verification Process')
+        await interaction.guild.create_category(name='Support')
+        await interaction.guild.create_category(name='Staff')
+        importantcategory = utils.get(interaction.guild.categories, name='Important')
+        generalcategory = utils.get(interaction.guild.categories, name='General')
+        verificationprocess = utils.get(interaction.guild.categories, name='Verification Process')
+        supportcategory = utils.get(interaction.guild.categories, name='Support')
+        staffcategorys = utils.get(interaction.guild.categories, name='Staff')
+        await interaction.guild.create_text_channel(name='announcements', overwrites=important, category=importantcategory)
+        await interaction.guild.create_text_channel(name='rules', overwrites=important, category=importantcategory)
+        await interaction.guild.create_text_channel(name='suggestions', overwrites=specialchannel, category=importantcategory)
+        await interaction.guild.create_text_channel(name='polls', overwrites=specialchannel, category=importantcategory)
+        await interaction.guild.create_text_channel(name='staff-chat', overwrites=staffoverwrites, category=staffcategorys)
+        await interaction.guild.create_text_channel(name='tickets', overwrites=specialchannel, category=supportcategory)
+        await interaction.guild.create_text_channel(name='verify', overwrites=verifyChannel, category=verificationprocess)
+        await interaction.guild.create_text_channel(name='general', overwrites=general, category=generalcategory)
+        await interaction.guild.create_text_channel(name='bot-commands', overwrites=general, category=generalcategory)
+        await interaction.guild.create_text_channel(name='memes', overwrites=memes, category=generalcategory)
+        await interaction.guild.create_text_channel(name='media', overwrites=memes, category=generalcategory)
+        await interaction.guild.create_text_channel(name='logs', overwrites=owner, category=staffcategorys)
+        ruleschannel = utils.get(interaction.guild.channels, name='rules')
+        await ruleschannel.send('''
+    1. You are allowed to swear to a certain point, just use your brain.
+    2. Follow all discord TOS and guidelines! https://discord.com/terms https://discord.com/guidelines
+    3. Do not dare someone to do suicide or any close to that, that will result in an INSTANT ban.
+    4. Do not brieb any of our admins.
+    5. If you feel good enough to take a challenge upon yourself, then figure out where the source code is. If you find the source code you will be rewarded an special role of your choice.
+    6. If you feel the bot is suitable for your server, then please execute ?invite in #bot-commands.
+    7. You are required to be over 13 years old or older to be on this discord server.
+    8. The bot coder, and some of our admins will always be available for python help, but not always during school. Only during weekend.
+    9. If you need help please open an ticket with ?ticket.
+    10. Have fun!''')
+        announcementschannel = utils.get(interaction.guild.channels, name='announcements')
+        await announcementschannel.send('Post any announcement here using /announce.')
+        await interaction.response.send_message('Delete the standard categories that are created when creating a server now.')
 
 
 bot.run(TOKEN)
